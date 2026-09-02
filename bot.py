@@ -2,7 +2,6 @@ import os
 import discord
 import datetime
 import random
-import math
 from discord import app_commands
 from dotenv import load_dotenv
 
@@ -51,15 +50,6 @@ FORTUNE_COMMENTS = {
 LUCKY_COLORS = ["天空藍", "薄荷綠", "珊瑚粉", "櫻花粉", "極致黑", "薰衣草紫", "琥珀橙", "檸檬黃", "象牙白", "翡翠綠"]
 CONSTELLATIONS = ["牡羊座", "金牛座", "雙子座", "巨蟹座", "獅子座", "處女座", "天秤座", "天蠍座", "射手座", "摩羯座", "水瓶座", "雙魚座"]
 
-LEVEL_UP_PHRASES = [
-    "我的天啊，你也太會聊天了吧 喵！",
-    "聊天大師就是你喵！",
-    "繼續保持，貓貓看好你喵！",
-    "今天也是元氣滿滿的一天喵！",
-    "看來有人說話停不下來喵～",
-    "水啦！等級又變高了喵！"
-]
-
 def format_join_time(joined_at):
     if not joined_at:
         joined_at = discord.utils.utcnow()
@@ -82,25 +72,15 @@ class FiveAMBot(discord.Client):
         
         if GUILD_ID != 0:
             guild = discord.Object(id=GUILD_ID)
-            # 1. Copy in-memory commands to guild
             self.tree.copy_global_to(guild=guild)
-            
-            # 2. Clear global commands from memory & wipe them from Discord's Global API
             self.tree.clear_commands(guild=None)
-            print("Purging stale global commands from Discord API...")
             await self.tree.sync(guild=None)
-            print("Stale global commands wiped from Discord!")
             
-            # 3. Sync clean commands to 5AM Guild
-            print(f"Syncing active commands to 5AM Guild ({GUILD_ID})...")
+            print(f"Syncing slash commands to 5AM Guild ({GUILD_ID})...")
             synced = await self.tree.sync(guild=guild)
-            print(f"Successfully synced {len(synced)} active commands to 5AM Guild!")
+            print(f"Successfully synced {len(synced)} active commands to 5AM Guild:")
             for cmd in synced:
                 print(f"  - /{cmd.name}: {cmd.description}")
-        else:
-            print("Syncing slash commands globally...")
-            synced = await self.tree.sync()
-            print(f"Successfully synced {len(synced)} commands globally!")
 
 bot = FiveAMBot()
 
@@ -108,43 +88,8 @@ bot = FiveAMBot()
 async def on_ready():
     print("------")
     print(f"Logged in as {bot.user} (ID: {bot.user.id})")
-    print("5AM Bot is online and connected!")
+    print("5AM Bot is online and ready!")
     print("------")
-
-    now_ts = int(datetime.datetime.utcnow().timestamp())
-    for guild in bot.guilds:
-        if GUILD_ID == 0 or guild.id == GUILD_ID:
-            for vc in guild.voice_channels:
-                for member in vc.members:
-                    if not member.bot:
-                        if database.get_voice_join_timestamp(member.id) is None:
-                            database.set_voice_join_timestamp(member.id, now_ts)
-
-@bot.event
-async def on_message(message):
-    if message.author.bot:
-        return
-        
-    if not message.guild or (GUILD_ID != 0 and message.guild.id != GUILD_ID):
-        return
-        
-    res = database.add_chat_xp(message.author.id)
-    if res:
-        xp_added, old_lvl, new_lvl, current_xp, xp_needed = res
-        if new_lvl is not None:
-            channel = bot.get_channel(LEVEL_CHANNEL_ID)
-            if channel:
-                phrase = random.choice(LEVEL_UP_PHRASES)
-                msg = (
-                    f"🎊 **恭喜 {message.author.mention} 升等了！**\n"
-                    f"📈 目前等級：**Lv. {new_lvl}**\n"
-                    f"✨ 距離下一等還差：**{xp_needed - current_xp} XP**\n"
-                    f"💡 *{phrase}*"
-                )
-                try:
-                    await channel.send(msg)
-                except Exception as e:
-                    print(f"Failed to send chat level up alert: {e}")
 
 @bot.event
 async def on_member_join(member):
@@ -205,44 +150,6 @@ async def on_voice_state_update(member, before, after):
         return
 
     log_channel = bot.get_channel(VOICE_LOG_CHANNEL_ID) if VOICE_LOG_CHANNEL_ID != 0 else None
-    lvl_channel = bot.get_channel(LEVEL_CHANNEL_ID) if LEVEL_CHANNEL_ID != 0 else None
-    now_ts = int(datetime.datetime.utcnow().timestamp())
-
-    # Case A: Connect
-    if before.channel is None and after.channel is not None:
-        database.set_voice_join_timestamp(member.id, now_ts)
-
-    # Case B: Disconnect
-    elif before.channel is not None and after.channel is None:
-        join_ts = database.get_voice_join_timestamp(member.id)
-        database.clear_voice_join_timestamp(member.id)
-        if join_ts:
-            minutes = (now_ts - join_ts) / 60.0
-            xp_res = database.add_voice_xp(member.id, minutes)
-            xp_added, old_lvl, new_lvl, current_xp, xp_needed = xp_res
-            if new_lvl is not None and lvl_channel:
-                msg = f"🎊 **{member.mention}** 在語音頻道中進化了！目前等級：**Lv.{new_lvl}** 喵！"
-                try:
-                    await lvl_channel.send(msg)
-                except Exception as e:
-                    print(f"Failed to send voice level up alert: {e}")
-
-    # Case C: Switch
-    elif before.channel is not None and after.channel is not None and before.channel.id != after.channel.id:
-        join_ts = database.get_voice_join_timestamp(member.id)
-        database.set_voice_join_timestamp(member.id, now_ts)
-        if join_ts:
-            minutes = (now_ts - join_ts) / 60.0
-            xp_res = database.add_voice_xp(member.id, minutes)
-            xp_added, old_lvl, new_lvl, current_xp, xp_needed = xp_res
-            if new_lvl is not None and lvl_channel:
-                msg = f"🎊 **{member.mention}** 在語音頻道中進化了！目前等級：**Lv.{new_lvl}** 喵！"
-                try:
-                    await lvl_channel.send(msg)
-                except Exception as e:
-                    print(f"Failed to send voice level up alert: {e}")
-
-    # Voice logging
     if not log_channel:
         return
 
@@ -279,8 +186,9 @@ async def on_voice_state_update(member, before, after):
         except Exception as e:
             print(f"Failed to send voice switch log: {e}")
 
-# ----------------- DAILY FORTUNE & TOXIC QUOTES -----------------
+# ----------------- ACTIVE COMMANDS (PHASE 1) -----------------
 
+# 1. /每日運勢
 @bot.tree.command(name="每日運勢", description="查看今日運勢、幸運色與貴人星座")
 async def fortune(interaction: discord.Interaction):
     discord_id = interaction.user.id
@@ -333,6 +241,7 @@ async def fortune(interaction: discord.Interaction):
         except Exception as e:
             await interaction.response.send_message(embed=embed)
 
+# 2. /每日毒湯
 @bot.tree.command(name="每日毒湯", description="隨機領取一碗心靈毒雞湯")
 async def toxic(interaction: discord.Interaction):
     quote, toxicity_level = database.get_random_toxic_quote()
@@ -367,6 +276,7 @@ async def toxic(interaction: discord.Interaction):
         except Exception as e:
             await interaction.response.send_message(embed=embed)
 
+# 3. /新增毒湯
 @bot.tree.command(name="新增毒湯", description="管理員新增自訂毒雞湯至語錄庫")
 @app_commands.describe(quote="要新增的毒雞湯內容", toxicity_level="毒湯等級分類")
 @app_commands.choices(toxicity_level=[
@@ -395,188 +305,6 @@ async def add_toxic(interaction: discord.Interaction, quote: str, toxicity_level
         await interaction.response.send_message(embed=embed, ephemeral=True)
     else:
         await interaction.response.send_message(f"⚠️ {msg}", ephemeral=True)
-
-# ----------------- LEVELING & LEADERBOARD COMMANDS -----------------
-
-@bot.tree.command(name="等級", description="查看自己或他人的活躍等級與經驗值")
-async def rank(interaction: discord.Interaction, member: discord.Member = None):
-    target_member = member or interaction.user
-    if target_member.bot:
-        await interaction.response.send_message("❌ 機器人沒有活躍等級喵！", ephemeral=True)
-        return
-        
-    lvl, xp, needed = database.get_level_data(target_member.id)
-    total_xp = database.get_cumulative_xp(lvl, xp)
-    
-    percentage = min(1.0, xp / needed) if needed > 0 else 1.0
-    filled = int(percentage * 10)
-    bar = "▰" * filled + "▱" * (10 - filled)
-    
-    embed = discord.Embed(
-        title=f"📊 {target_member.display_name} 的活躍等級",
-        color=0xF39C12
-    )
-    embed.set_thumbnail(url=target_member.display_avatar.url)
-    embed.add_field(name="📈 目前等級", value=f"**Lv. {lvl}**", inline=True)
-    embed.add_field(name="🏆 累計總經驗", value=f"`{total_xp:,} XP`", inline=True)
-    embed.add_field(
-        name="✨ 經驗值 (XP)", 
-        value=f"`{xp:,} / {needed:,} XP`\n{bar} ({int(percentage * 100)}%)", 
-        inline=False
-    )
-    
-    await interaction.response.send_message(embed=embed)
-
-@bot.tree.command(name="排行榜", description="查看伺服器活躍等級排行榜前30名")
-async def leaderboard(interaction: discord.Interaction):
-    top_30 = database.get_leaderboard(limit=30)
-    
-    if not top_30:
-        await interaction.response.send_message("📊 排行榜目前空空如也，快去說話聊天吧喵！", ephemeral=True)
-        return
-        
-    embed = discord.Embed(
-        title="🏆 5AM 伺服器活躍度等級排行榜 (TOP 30)",
-        description="快來看看是誰在伺服器裡最愛聊天與掛網！\n*每個月 1 號將會自動清空歸零。*",
-        color=0xF39C12
-    )
-    
-    hall_of_fame = []
-    backbone = []
-    close_behind = []
-    
-    for i, row in enumerate(top_30, 1):
-        uid, lvl, xp, total_xp = row
-        if i == 1:
-            rank_label = "🥇"
-        elif i == 2:
-            rank_label = "🥈"
-        elif i == 3:
-            rank_label = "🥉"
-        elif i <= 10:
-            rank_label = f"`#{i:02d}`"
-        else:
-            rank_label = f"`#{i}`"
-            
-        line = f"{rank_label} <@{uid}> ｜ **Lv.{lvl}** ｜ Total XP: `{total_xp:,}`"
-        
-        if i <= 10:
-            hall_of_fame.append(line)
-        elif i <= 20:
-            backbone.append(line)
-        else:
-            close_behind.append(line)
-            
-    if hall_of_fame:
-        embed.add_field(name="👑 榮譽殿堂 (1 - 10)", value="\n".join(hall_of_fame), inline=False)
-    if backbone:
-        embed.add_field(name="✨ 中流砥柱 (11 - 20)", value="\n".join(backbone), inline=False)
-    if close_behind:
-        embed.add_field(name="🔥 緊追在後 (21 - 30)", value="\n".join(close_behind), inline=False)
-        
-    await interaction.response.send_message(embed=embed)
-
-# --- ADMIN ACTIONS ---
-
-@bot.tree.command(name="加權升等", description="管理員加持直接提升成員等級")
-@app_commands.describe(member="要升等的成員", levels="要提升的等級數量")
-async def add_level(interaction: discord.Interaction, member: discord.Member, levels: int):
-    if not interaction.user.guild_permissions.administrator:
-        await interaction.response.send_message("❌ 你沒有權限使用此管理員指令喵！", ephemeral=True)
-        return
-        
-    if member.bot:
-        await interaction.response.send_message("❌ 無法為機器人修改等級喵！", ephemeral=True)
-        return
-        
-    if levels <= 0:
-        await interaction.response.send_message("❌ 請輸入大於 0 的等級數量喵！", ephemeral=True)
-        return
-        
-    new_lvl, new_xp = database.modify_user_level(member.id, levels)
-    announcement = f"🎊 透過管理員加持，{member.mention} 升到了 **Lv.{new_lvl}**！"
-    lvl_channel = bot.get_channel(LEVEL_CHANNEL_ID)
-    
-    if lvl_channel:
-        try:
-            await lvl_channel.send(announcement)
-        except Exception as e:
-            print(f"Failed to post admin level up broadcast: {e}")
-            
-    await interaction.response.send_message(f"✅ 已成功將 {member.display_name} 升等至 Lv. {new_lvl}。", ephemeral=True)
-
-@bot.tree.command(name="天災降等", description="天災懲罰降低成員等級")
-@app_commands.describe(member="要降等的成員", levels="要降低的等級數量")
-async def remove_level(interaction: discord.Interaction, member: discord.Member, levels: int):
-    if not interaction.user.guild_permissions.administrator:
-        await interaction.response.send_message("❌ 你沒有權限使用此管理員指令喵！", ephemeral=True)
-        return
-        
-    if member.bot:
-        await interaction.response.send_message("❌ 無法為機器人修改等級喵！", ephemeral=True)
-        return
-        
-    if levels <= 0:
-        await interaction.response.send_message("❌ 請輸入大於 0 的等級數量喵！", ephemeral=True)
-        return
-        
-    new_lvl, new_xp = database.modify_user_level(member.id, -levels)
-    announcement = f"⚡ 喔不！有人被雷劈到，{member.mention} 竟然降到了 **Lv.{new_lvl}**... 😭"
-    lvl_channel = bot.get_channel(LEVEL_CHANNEL_ID)
-    
-    if lvl_channel:
-        try:
-            await lvl_channel.send(announcement)
-        except Exception as e:
-            print(f"Failed to post admin level down broadcast: {e}")
-            
-    await interaction.response.send_message(f"✅ 已成功將 {member.display_name} 降等至 Lv. {new_lvl}。", ephemeral=True)
-
-@bot.tree.command(name="重置賽季", description="重置全服等級並發布上賽季終極榮譽榜")
-async def reset_season_cmd(interaction: discord.Interaction):
-    if not interaction.user.guild_permissions.administrator:
-        await interaction.response.send_message("❌ 你沒有權限使用此管理員指令喵！", ephemeral=True)
-        return
-        
-    top_10 = database.reset_season()
-    lvl_channel = bot.get_channel(LEVEL_CHANNEL_ID)
-    if not lvl_channel:
-        await interaction.response.send_message("❌ 找不到等級通知頻道，無法完成廣播喵！", ephemeral=True)
-        return
-        
-    honor_lines = []
-    for i, row in enumerate(top_10, 1):
-        uid, lvl, xp, total_xp = row
-        if i == 1:
-            emoji = "🥇"
-        elif i == 2:
-            emoji = "🥈"
-        elif i == 3:
-            emoji = "🥉"
-        else:
-            emoji = f"`#{i:02d}`"
-        honor_lines.append(f"{emoji} **Lv.{lvl}** - <@{uid}> (總經驗: {total_xp:,} XP)")
-        
-    honor_board = (
-        "🏆 **【5AM 上賽季活躍度等級終極榮譽榜 - TOP 10】** 🏆\n"
-        "感謝以下十位大老上個月在伺服器的爆肝陪伴！\n"
-        "---------------------------------------\n" +
-        "\n".join(honor_lines) +
-        "\n---------------------------------------"
-    )
-    
-    season_start = (
-        "📅 📌 **【5AM 新賽季正式啟動通知】**\n"
-        "新的一個月開始了！全伺服器的**等級與經驗值已全數歸零重置** 喵！\n"
-        "聊天與語音的新戰場正式展開，大家重新出發吧！衝啊 ˊˇˋ ✨"
-    )
-    
-    try:
-        await lvl_channel.send(honor_board)
-        await lvl_channel.send(season_start)
-        await interaction.response.send_message("✅ 賽季重置廣播已成功送出！", ephemeral=True)
-    except Exception as e:
-        await interaction.response.send_message(f"❌ 廣播發送失敗: {e}", ephemeral=True)
 
 if __name__ == "__main__":
     if not TOKEN:
