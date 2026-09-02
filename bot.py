@@ -80,18 +80,27 @@ class FiveAMBot(discord.Client):
     async def setup_hook(self):
         database.init_db()
         
-        # 1. Clear any old global commands to prevent stale commands from appearing
-        print("Cleaning up old global commands...")
-        self.tree.clear_commands(guild=None)
-        await self.tree.sync()
-        
-        # 2. Sync active commands to the 5AM Guild for instant update
         if GUILD_ID != 0:
             guild = discord.Object(id=GUILD_ID)
+            # 1. Copy in-memory commands to guild
             self.tree.copy_global_to(guild=guild)
-            print(f"Syncing slash commands to 5AM Guild ({GUILD_ID})...")
-            await self.tree.sync(guild=guild)
-            print("Slash commands synced to guild successfully!")
+            
+            # 2. Clear global commands from memory & wipe them from Discord's Global API
+            self.tree.clear_commands(guild=None)
+            print("Purging stale global commands from Discord API...")
+            await self.tree.sync(guild=None)
+            print("Stale global commands wiped from Discord!")
+            
+            # 3. Sync clean commands to 5AM Guild
+            print(f"Syncing active commands to 5AM Guild ({GUILD_ID})...")
+            synced = await self.tree.sync(guild=guild)
+            print(f"Successfully synced {len(synced)} active commands to 5AM Guild!")
+            for cmd in synced:
+                print(f"  - /{cmd.name}: {cmd.description}")
+        else:
+            print("Syncing slash commands globally...")
+            synced = await self.tree.sync()
+            print(f"Successfully synced {len(synced)} commands globally!")
 
 bot = FiveAMBot()
 
