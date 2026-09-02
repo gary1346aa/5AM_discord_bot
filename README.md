@@ -1,23 +1,26 @@
 # 5AM Discord Guild Bot 🌅
 
-A custom Discord bot tailored for the **5AM** guild, featuring automated member onboarding, voice activity logging, daily fortune/fun commands, dynamic toxic quotes management, and a complete chat & voice leveling system.
+A custom Discord bot tailored for the **5AM** guild, featuring automated member onboarding, voice activity logging, dual fortune-telling systems, and dynamic toxic quotes management.
 
 ---
 
-## 🚀 Features
+## 🚀 Active Features & Commands
 
 - **🌅 Welcome & Farewell System**: Branded embed greeting cards showing member avatars, server rules shortcut, member count, and local join timestamp (UTC+8).
 - **🔊 Voice Activity Logging**: Real-time logging of voice room joins, leaves, and channel switches.
-- **🔮 Daily Fortune & Entertainment**:
-  - `/每日運勢`: Daily fortune-telling with daily cooldown lock, lucky color, noble constellation, and custom commentary.
-  - `/每日毒湯`: Demotivational toxic quote generator with toxicity rating.
-  - `/新增毒湯`: Admin command to dynamically add custom toxic quotes directly to the database.
-- **📊 Activity Leveling & Leaderboard**:
-  - **Chat XP**: 15–25 XP per message (60s cooldown).
-  - **Voice XP**: 10 XP/minute based on active voice time.
-  - `/等級`: Personal rank card with visual progress bar (`▰▰▱▱`).
-  - `/排行榜`: Server Top 30 leaderboard categorised into *Hall of Fame (1–10)*, *Backbone (11–20)*, and *Close Behind (21–30)*.
-  - **Admin Commands**: `/加權升等`, `/天災降等`, and `/重置賽季` (monthly leaderboard reset with Top 10 honor board broadcast).
+- **🔮 Dual Fortune Systems**:
+  - `/每日運勢`: **經典星座色彩版** — 查看每日吉凶、今日短評、幸運色與貴人星座。
+  - `/每日運勢2`: **Artale 冒險神諭版** — 專為打王冒險設計，包含：
+    - 📜 今日神諭
+    - ⭕ 今日【宜】*(如：墊卷衝裝大成功、準時上車打龍王分寶)*
+    - ❌ 今日【忌】*(如：頭鐵狂點30%詛咒卷、王死噴寶瞬間斷線)*
+    - 🤝 貴人隊友 *(12 職業特色稱號)*
+    - 🗺️ 幸運地圖 *(炎魔祭壇、龍王洞穴、海怒斯洞窟等)*
+    - 💎 掉寶預測 *(日鏢、月鏢、雷鏢、炎盔、龍王項鍊、詛咒卷等)*
+    - 🎴 命運塔羅指引
+- **🥣 Toxic Quotes System**:
+  - `/每日毒湯`: 隨機領取一碗心靈毒雞湯 (普通毒湯 / 劇毒砒霜)。
+  - `/新增毒湯`: 管理員自訂新增毒雞湯至語錄庫。
 
 ---
 
@@ -54,11 +57,3 @@ RULES_CHANNEL_ID=your_rules_channel_id
 ```bash
 python bot.py
 ```
-
----
-
-## ⚙️ Required Discord Bot Privileged Intents
-Ensure the following **Privileged Gateway Intents** are enabled in the [Discord Developer Portal](https://discord.com/developers/applications):
-- **Server Members Intent** (`intents.members = True`)
-- **Message Content Intent** (`intents.message_content = True`)
-- **Voice State Intent** (`intents.voice_states = True`)

@@ -186,9 +186,9 @@ async def on_voice_state_update(member, before, after):
         except Exception as e:
             print(f"Failed to send voice switch log: {e}")
 
-# ----------------- ACTIVE COMMANDS (PHASE 1) -----------------
+# ----------------- ACTIVE COMMANDS -----------------
 
-# 1. /每日運勢
+# 1. /每日運勢 (經典星座色彩版)
 @bot.tree.command(name="每日運勢", description="查看今日運勢、幸運色與貴人星座")
 async def fortune(interaction: discord.Interaction):
     discord_id = interaction.user.id
@@ -207,12 +207,12 @@ async def fortune(interaction: discord.Interaction):
     noble = random.choice(CONSTELLATIONS)
     
     embed = discord.Embed(
-        title=f"🔮 {interaction.user.display_name} 的今日運勢",
+        title=f"🔮 {interaction.user.display_name} 的今日運勢 (經典版)",
         color=0xF39C12
     )
     embed.set_thumbnail(url=interaction.user.display_avatar.url)
     
-    embed.add_field(name="✨ 運勢等級", value=level, inline=False)
+    embed.add_field(name="✨ 運勢等級", value=f"**{level}**", inline=False)
     embed.add_field(name="💬 今日短評", value=comment, inline=False)
     embed.add_field(name="🎨 幸運色", value=f"`{color}`", inline=True)
     embed.add_field(name="🤝 貴人星座", value=f"`{noble}`", inline=True)
@@ -241,7 +241,74 @@ async def fortune(interaction: discord.Interaction):
         except Exception as e:
             await interaction.response.send_message(embed=embed)
 
-# 2. /每日毒湯
+# 2. /每日運勢2 (Artale 冒險者神諭與打王宜忌版)
+@bot.tree.command(name="每日運勢2", description="Artale 冒險者專屬神諭占卜 (含打王宜忌、掉寶預測、貴人職業與幸運地圖)")
+async def fortune2(interaction: discord.Interaction):
+    discord_id = interaction.user.id
+    can_get, last_date = database.check_fortune2_status(discord_id)
+    
+    if not can_get:
+        await interaction.response.send_message(
+            f"⚠️ {interaction.user.mention}，你今天已經領取過 Artale 冒險者神諭囉！明日請早喵～",
+            ephemeral=False
+        )
+        return
+    
+    f2 = database.generate_fortune2_data()
+    
+    # Color palette based on tier
+    if "大吉" in f2["tier"]:
+        embed_color = 0xF1C40F # Gold
+    elif "中吉" in f2["tier"]:
+        embed_color = 0x3498DB # Blue
+    elif "小吉" in f2["tier"]:
+        embed_color = 0x2ECC71 # Green
+    elif "大凶" in f2["tier"]:
+        embed_color = 0x111111 # Dark Black
+    else:
+        embed_color = 0xE67E22 # Orange / Danger
+        
+    embed = discord.Embed(
+        title=f"⚔️ {interaction.user.display_name} 的 Artale 冒險者神諭",
+        description=f"> 📜 今日神諭：**{f2['oracle']}**",
+        color=embed_color
+    )
+    embed.set_thumbnail(url=interaction.user.display_avatar.url)
+    
+    embed.add_field(name="📜 運勢等級", value=f"### {f2['tier']}", inline=False)
+    embed.add_field(name="⭕ 今日【宜】", value=f"```fix\n{f2['yi']}```", inline=False)
+    embed.add_field(name="❌ 今日【忌】", value=f"```diff\n- {f2['ji']}```", inline=False)
+    embed.add_field(name="🤝 貴人隊友", value=f"`{f2['noble']}`", inline=True)
+    embed.add_field(name="🗺️ 幸運地圖", value=f"`{f2['map']}`", inline=True)
+    embed.add_field(name="💎 掉寶預測", value=f"`{f2['drop']}`", inline=False)
+    embed.add_field(name="🎴 命運塔羅指引", value=f"**{f2['tarot_card']}**\n> {f2['tarot_desc']}", inline=False)
+    
+    embed.set_footer(text="5AM 冒險神諭庫 ｜ 占卜結果僅供娛樂與打王參考 ˊˇˋ ✨")
+    
+    database.record_fortune2(discord_id)
+    
+    if QUOTE_CHANNEL_ID == 0:
+        await interaction.response.send_message(embed=embed)
+        return
+        
+    quote_channel = bot.get_channel(QUOTE_CHANNEL_ID)
+    if not quote_channel:
+        await interaction.response.send_message(embed=embed)
+        return
+        
+    if interaction.channel_id == QUOTE_CHANNEL_ID:
+        await interaction.response.send_message(embed=embed)
+    else:
+        try:
+            await quote_channel.send(embed=embed)
+            await interaction.response.send_message(
+                f"⚔️ 你的 Artale 冒險者神諭已發送到 {quote_channel.mention} 囉喵！",
+                ephemeral=True
+            )
+        except Exception as e:
+            await interaction.response.send_message(embed=embed)
+
+# 3. /每日毒湯
 @bot.tree.command(name="每日毒湯", description="隨機領取一碗心靈毒雞湯")
 async def toxic(interaction: discord.Interaction):
     quote, toxicity_level = database.get_random_toxic_quote()
@@ -276,7 +343,7 @@ async def toxic(interaction: discord.Interaction):
         except Exception as e:
             await interaction.response.send_message(embed=embed)
 
-# 3. /新增毒湯
+# 4. /新增毒湯
 @bot.tree.command(name="新增毒湯", description="管理員新增自訂毒雞湯至語錄庫")
 @app_commands.describe(quote="要新增的毒雞湯內容", toxicity_level="毒湯等級分類")
 @app_commands.choices(toxicity_level=[
