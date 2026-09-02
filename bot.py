@@ -80,16 +80,18 @@ class FiveAMBot(discord.Client):
     async def setup_hook(self):
         database.init_db()
         
+        # 1. Clear any old global commands to prevent stale commands from appearing
+        print("Cleaning up old global commands...")
+        self.tree.clear_commands(guild=None)
+        await self.tree.sync()
+        
+        # 2. Sync active commands to the 5AM Guild for instant update
         if GUILD_ID != 0:
             guild = discord.Object(id=GUILD_ID)
             self.tree.copy_global_to(guild=guild)
-            print(f"Syncing slash commands to guild ID {GUILD_ID} (instant sync)...")
+            print(f"Syncing slash commands to 5AM Guild ({GUILD_ID})...")
             await self.tree.sync(guild=guild)
             print("Slash commands synced to guild successfully!")
-        else:
-            print("Syncing slash commands globally (may take up to an hour to propagate)...")
-            await self.tree.sync()
-            print("Slash commands synced globally!")
 
 bot = FiveAMBot()
 
@@ -97,7 +99,7 @@ bot = FiveAMBot()
 async def on_ready():
     print("------")
     print(f"Logged in as {bot.user} (ID: {bot.user.id})")
-    print("5AM Bot is ready and connected to Discord!")
+    print("5AM Bot is online and connected!")
     print("------")
 
     now_ts = int(datetime.datetime.utcnow().timestamp())
@@ -566,161 +568,6 @@ async def reset_season_cmd(interaction: discord.Interaction):
         await interaction.response.send_message("✅ 賽季重置廣播已成功送出！", ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(f"❌ 廣播發送失敗: {e}", ephemeral=True)
-
-# ----------------- SIMULATION COMMANDS FOR TESTING -----------------
-
-@bot.tree.command(name="sim_fortune", description="模擬每日運勢占卜 (繞過每日冷卻限制)")
-async def sim_fortune(interaction: discord.Interaction, member: discord.Member = None):
-    target_member = member or interaction.user
-    level = random.choice(FORTUNE_LEVELS)
-    comment = random.choice(FORTUNE_COMMENTS[level])
-    color = random.choice(LUCKY_COLORS)
-    noble = random.choice(CONSTELLATIONS)
-    
-    embed = discord.Embed(
-        title=f"🔮 {target_member.display_name} 的模擬今日運勢",
-        color=0xF39C12
-    )
-    embed.set_thumbnail(url=target_member.display_avatar.url)
-    
-    embed.add_field(name="✨ 運勢等級", value=level, inline=False)
-    embed.add_field(name="💬 今日短評", value=comment, inline=False)
-    embed.add_field(name="🎨 幸運色", value=f"`{color}`", inline=True)
-    embed.add_field(name="🤝 貴人星座", value=f"`{noble}`", inline=True)
-    embed.add_field(name="\u200b", value="占卜結果僅供參考，祝你有美好的一天！喵 ˊˇˋ", inline=False)
-    
-    if QUOTE_CHANNEL_ID == 0:
-        await interaction.response.send_message(embed=embed)
-        return
-        
-    quote_channel = bot.get_channel(QUOTE_CHANNEL_ID)
-    if not quote_channel:
-        await interaction.response.send_message(embed=embed)
-        return
-        
-    if interaction.channel_id == QUOTE_CHANNEL_ID:
-        await interaction.response.send_message(embed=embed)
-    else:
-        try:
-            await quote_channel.send(embed=embed)
-            await interaction.response.send_message(
-                f"🔮 你的模擬今日運勢已發送到 {quote_channel.mention} 囉喵！",
-                ephemeral=True
-            )
-        except Exception as e:
-            await interaction.response.send_message(embed=embed)
-
-@bot.tree.command(name="sim_welcome", description="模擬發送新成員歡迎卡片")
-async def sim_welcome(interaction: discord.Interaction, member: discord.Member = None):
-    target_member = member or interaction.user
-    if WELCOME_CHANNEL_ID == 0:
-        await interaction.response.send_message("錯誤：.env 尚未設定 WELCOME_CHANNEL_ID。", ephemeral=True)
-        return
-    channel = bot.get_channel(WELCOME_CHANNEL_ID)
-    if not channel:
-        await interaction.response.send_message(f"錯誤：找不到 ID 為 {WELCOME_CHANNEL_ID} 的歡迎頻道。", ephemeral=True)
-        return
-
-    join_time_str = format_join_time(target_member.joined_at)
-    rules_text = f"📜 請先閱讀規則並領取身分組 <#{RULES_CHANNEL_ID}>。\n" if RULES_CHANNEL_ID != 0 else "📜 請先閱讀伺服器規則並領取身分組。\n"
-    embed = discord.Embed(
-        title="🌅 歡迎加入 5AM 🌅",
-        description=(
-            f"Hi! {target_member.mention}\n\n"
-            f"✨ 歡迎加入 ✨ 5AM，願你在這裡遇見屬於自己的早晨與陪伴。\n\n"
-            f"{rules_text}"
-            f"📝 請將暱稱修改為遊戲暱稱 / 職業。\n"
-            f"💬 有任何問題都可以詢問管理員。\n\n"
-            f"🤍 希望你能在這裡留下美好的回憶。\n\n"
-            f"📊 目前伺服器人數\n"
-            f"**{interaction.guild.member_count} 人**\n\n"
-            f"加入時間 : {join_time_str}"
-        ),
-        color=0xF39C12
-    )
-    embed.set_thumbnail(url=target_member.display_avatar.url)
-    
-    try:
-        await channel.send(embed=embed)
-        await interaction.response.send_message(f"✅ 已成功發送模擬歡迎卡片至 {channel.mention}。", ephemeral=True)
-    except Exception as e:
-        await interaction.response.send_message(f"❌ 發送失敗: {e}", ephemeral=True)
-
-@bot.tree.command(name="sim_farewell", description="模擬發送成員離服告別卡片")
-async def sim_farewell(interaction: discord.Interaction, member: discord.Member = None):
-    target_member = member or interaction.user
-    if WELCOME_CHANNEL_ID == 0:
-        await interaction.response.send_message("錯誤：.env 尚未設定 WELCOME_CHANNEL_ID。", ephemeral=True)
-        return
-    channel = bot.get_channel(WELCOME_CHANNEL_ID)
-    if not channel:
-        await interaction.response.send_message(f"錯誤：找不到 ID 為 {WELCOME_CHANNEL_ID} 的歡迎頻道。", ephemeral=True)
-        return
-
-    leave_time_str = format_join_time(None)
-    embed = discord.Embed(
-        title="🌙 成員離開了 5AM 🌙",
-        description=(
-            f"**{target_member.name}**（{target_member.mention}）已經離開了我們。\n\n"
-            f"✨ 感謝你曾陪伴我們度過這段時光，祝你未來旅途一切順利！\n\n"
-            f"📊 目前伺服器人數\n"
-            f"**{interaction.guild.member_count} 人**\n\n"
-            f"離開時間 : {leave_time_str}"
-        ),
-        color=0x808080
-    )
-    embed.set_thumbnail(url=target_member.display_avatar.url)
-    
-    try:
-        await channel.send(embed=embed)
-        await interaction.response.send_message(f"✅ 已成功發送模擬告別卡片至 {channel.mention}。", ephemeral=True)
-    except Exception as e:
-        await interaction.response.send_message(f"❌ 發送失敗: {e}", ephemeral=True)
-
-@bot.tree.command(name="sim_voice", description="模擬發送語音進出日誌紀錄")
-@app_commands.choices(action=[
-    app_commands.Choice(name="進入語音房", value="join"),
-    app_commands.Choice(name="離開語音房", value="leave"),
-    app_commands.Choice(name="切換語音房", value="switch")
-])
-async def sim_voice(interaction: discord.Interaction, action: str, channel_name: str = "測試語音房"):
-    if VOICE_LOG_CHANNEL_ID == 0:
-        await interaction.response.send_message("錯誤：.env 尚未設定 VOICE_LOG_CHANNEL_ID。", ephemeral=True)
-        return
-    channel = bot.get_channel(VOICE_LOG_CHANNEL_ID)
-    if not channel:
-        await interaction.response.send_message(f"錯誤：找不到 ID 為 {VOICE_LOG_CHANNEL_ID} 的語音日誌頻道。", ephemeral=True)
-        return
-
-    if action == "join":
-        msg = (
-            f"🔊 **{interaction.user.display_name}** 進入了語音頻道\n"
-            f"📍 頻道：**{channel_name}**\n"
-            f"👥 目前人數：**1**"
-        )
-    elif action == "leave":
-        msg = (
-            f"🔇 **{interaction.user.display_name}** 離開了語音頻道\n"
-            f"📍 頻道：**{channel_name}**\n"
-            f"👥 剩餘人數：**0**"
-        )
-    else:
-        msg = (
-            f"🔄 **{interaction.user.display_name}** 切換了語音頻道\n"
-            f"📤 離開：**舊語音房** (0人)\n"
-            f"📥 進入：**{channel_name}** (1人)"
-        )
-        
-    try:
-        await channel.send(msg)
-        await interaction.response.send_message(f"✅ 已成功發送模擬語音 {action} 日誌至 {channel.mention}。", ephemeral=True)
-    except Exception as e:
-        await interaction.response.send_message(f"❌ 發送失敗: {e}", ephemeral=True)
-
-@bot.tree.command(name="ping", description="測試機器人延遲速度")
-async def ping(interaction: discord.Interaction):
-    latency = round(bot.latency * 1000)
-    await interaction.response.send_message(f"Pong! 🏓 (延遲: {latency}ms)", ephemeral=True)
 
 if __name__ == "__main__":
     if not TOKEN:

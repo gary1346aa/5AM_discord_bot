@@ -18,8 +18,6 @@ A custom Discord bot tailored for the **5AM** guild, featuring automated member 
   - `/等級`: Personal rank card with visual progress bar (`▰▰▱▱`).
   - `/排行榜`: Server Top 30 leaderboard categorised into *Hall of Fame (1–10)*, *Backbone (11–20)*, and *Close Behind (21–30)*.
   - **Admin Commands**: `/加權升等`, `/天災降等`, and `/重置賽季` (monthly leaderboard reset with Top 10 honor board broadcast).
-- **🛠️ Testing & Simulation Commands**:
-  - `/sim_welcome`, `/sim_farewell`, `/sim_voice`, `/sim_fortune`, `/ping`.
 
 ---
 
