@@ -308,7 +308,108 @@ async def fortune2(interaction: discord.Interaction):
         except Exception as e:
             await interaction.response.send_message(embed=embed)
 
-# 3. /每日毒湯
+
+# 3. /衝卷 (Artale 衝卷模擬器 - 原汁原味遊戲文字)
+@bot.tree.command(name="衝卷", description="Artale 裝備衝卷模擬器 (支援一般卷軸、詛咒卷軸、純白卷軸)")
+@app_commands.describe(
+    item_name="目標裝備名稱 (例如：強化冥雷弩、炎魔頭盔、乾坤手套)",
+    scroll_type="卷軸類型 (一般卷軸 / 詛咒卷軸 / 純白卷軸)",
+    success_rate="卷軸成功機率 % (例如：10, 15, 30, 60, 65, 70, 100, 1, 3, 5)",
+    break_rate="失敗毀損機率 % (詛咒卷固定50%，純白卷可自訂如 1, 5, 10，一般卷請填0)"
+)
+@app_commands.choices(scroll_type=[
+    app_commands.Choice(name="📜 一般卷軸 (失敗不爆裝)", value="一般卷軸"),
+    app_commands.Choice(name="💀 詛咒卷軸 (失敗50%機率摧毀裝備)", value="詛咒卷軸"),
+    app_commands.Choice(name="⚪ 純白卷軸 (失敗自訂機率摧毀裝備)", value="純白卷軸")
+])
+async def scroll(
+    interaction: discord.Interaction,
+    item_name: str,
+    scroll_type: str,
+    success_rate: float,
+    break_rate: float = 0.0
+):
+    # Validate rates
+    if success_rate <= 0 or success_rate > 100:
+        await interaction.response.send_message("❌ 卷軸成功機率必須在 0.1% ~ 100% 之間喵！", ephemeral=True)
+        return
+        
+    if break_rate < 0 or break_rate > 100:
+        await interaction.response.send_message("❌ 毀損機率必須在 0% ~ 100% 之間喵！", ephemeral=True)
+        return
+        
+    # Determine effective break rate
+    if scroll_type == "詛咒卷軸":
+        effective_break_rate = 50.0
+    elif scroll_type == "純白卷軸":
+        effective_break_rate = break_rate
+    else: # 一般卷軸
+        effective_break_rate = 0.0
+        
+    # Roll dice
+    roll_success = round(random.uniform(0.0001, 100.0), 2)
+    is_success = roll_success <= success_rate
+    
+    if is_success:
+        # Success Case
+        embed_color = 0x2ECC71 # Green
+        title = "🎉【衝卷大成功】"
+        game_text = f"卷軸閃爍了一下，神秘的力量傳到了{item_name}身上。"
+        status_text = "✅ 裝備能力大幅提升！"
+        detail_text = f"🎯 成功判定：擲出 `{roll_success:.2f}%` (門檻: `≤ {success_rate:.1f}%`) 👉 **成功！**"
+    else:
+        # Failed - Check Destruction
+        if effective_break_rate > 0.0:
+            roll_break = round(random.uniform(0.0001, 100.0), 2)
+            is_destroyed = roll_break <= effective_break_rate
+        else:
+            roll_break = None
+            is_destroyed = False
+            
+        if is_destroyed:
+            # Destroyed Case
+            embed_color = 0xE74C3C # Red
+            title = "💥【裝備已被摧毀】"
+            game_text = f"受到卷軸的力量影響，{item_name}被摧毀了。"
+            status_text = "💀 裝備化為烏有 (永久損毀)"
+            detail_text = (
+                f"🎯 成功判定：擲出 `{roll_success:.2f}%` (門檻: `≤ {success_rate:.1f}%`) 👉 **失敗**\n"
+                f"💣 毀損判定：擲出 `{roll_break:.2f}%` (門檻: `≤ {effective_break_rate:.1f}%`) 👉 **💥 觸發摧毀！**"
+            )
+        else:
+            # Safe Fail Case
+            embed_color = 0x95A5A6 # Gray
+            title = "💨【衝卷失敗】"
+            game_text = f"卷軸閃爍了一下，但{item_name}沒有任何變化。"
+            status_text = "🛡️ 裝備保留 (未觸發毀損)"
+            if effective_break_rate > 0:
+                detail_text = (
+                    f"🎯 成功判定：擲出 `{roll_success:.2f}%` (門檻: `≤ {success_rate:.1f}%`) 👉 **失敗**\n"
+                    f"🛡️ 毀損判定：擲出 `{roll_break:.2f}%` (門檻: `≤ {effective_break_rate:.1f}%`) 👉 **幸運未爆**"
+                )
+            else:
+                detail_text = f"🎯 成功判定：擲出 `{roll_success:.2f}%` (門檻: `≤ {success_rate:.1f}%`) 👉 **失敗 (無損毀機制)**"
+                
+    embed = discord.Embed(
+        title=f"{title} ｜ {interaction.user.display_name} 的衝卷結果",
+        description=f"```{game_text}```",
+        color=embed_color
+    )
+    embed.set_thumbnail(url=interaction.user.display_avatar.url)
+    
+    embed.add_field(name="🛡️ 目標裝備", value=f"**{item_name}**", inline=True)
+    embed.add_field(
+        name="📜 使用卷軸", 
+        value=f"**{scroll_type}**\n(成功: `{success_rate:.1f}%` ｜ 毀損: `{effective_break_rate:.1f}%`)", 
+        inline=True
+    )
+    embed.add_field(name="📊 裝備狀態", value=status_text, inline=False)
+    embed.add_field(name="🎲 判定數值明細", value=detail_text, inline=False)
+    embed.set_footer(text="5AM 鐵匠工坊 ｜ Artale 原廠機率模擬 ˊˇˋ")
+    
+    await interaction.response.send_message(embed=embed)
+
+# 4. /每日毒湯
 @bot.tree.command(name="每日毒湯", description="隨機領取一碗心靈毒雞湯")
 async def toxic(interaction: discord.Interaction):
     quote, toxicity_level = database.get_random_toxic_quote()
@@ -343,7 +444,7 @@ async def toxic(interaction: discord.Interaction):
         except Exception as e:
             await interaction.response.send_message(embed=embed)
 
-# 4. /新增毒湯
+# 5. /新增毒湯
 @bot.tree.command(name="新增毒湯", description="管理員新增自訂毒雞湯至語錄庫")
 @app_commands.describe(quote="要新增的毒雞湯內容", toxicity_level="毒湯等級分類")
 @app_commands.choices(toxicity_level=[
