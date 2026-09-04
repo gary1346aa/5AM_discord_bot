@@ -349,8 +349,6 @@ async def scroll(
         embed_color = 0x2ECC71
         title = "🎉【衝卷大成功】"
         game_text = f"卷軸閃爍了一下，神秘的力量傳到了{裝備名稱}身上。"
-        status_text = "✅ 裝備能力大幅提升！"
-        detail_text = f"🎯 成功判定：擲出 `{roll_success:.2f}%`（門檻: `≤ {卷軸機率:.1f}%`）👉 **成功！**"
     else:
         if effective_break_rate > 0.0:
             roll_break = round(random.uniform(0.0001, 100.0), 2)
@@ -363,23 +361,10 @@ async def scroll(
             embed_color = 0xE74C3C
             title = "💥【裝備已被摧毀】"
             game_text = f"受到卷軸的力量影響，{裝備名稱}被摧毀了。"
-            status_text = "💀 裝備化為烏有（永久損毀）"
-            detail_text = (
-                f"🎯 成功判定：擲出 `{roll_success:.2f}%`（門檻: `≤ {卷軸機率:.1f}%`）👉 **失敗**\n"
-                f"💣 毀損判定：擲出 `{roll_break:.2f}%`（門檻: `≤ {effective_break_rate:.1f}%`）👉 **💥 觸發摧毀！**"
-            )
         else:
             embed_color = 0x95A5A6
             title = "💨【衝卷失敗】"
             game_text = f"卷軸閃爍了一下，但{裝備名稱}沒有任何變化。"
-            status_text = "🛡️ 裝備保留（未觸發毀損）"
-            if effective_break_rate > 0:
-                detail_text = (
-                    f"🎯 成功判定：擲出 `{roll_success:.2f}%`（門檻: `≤ {卷軸機率:.1f}%`）👉 **失敗**\n"
-                    f"🛡️ 毀損判定：擲出 `{roll_break:.2f}%`（門檻: `≤ {effective_break_rate:.1f}%`）👉 **幸運未爆**"
-                )
-            else:
-                detail_text = f"🎯 成功判定：擲出 `{roll_success:.2f}%`（門檻: `≤ {卷軸機率:.1f}%`）👉 **失敗（無損毀機制）**"
                 
     embed = discord.Embed(
         title=f"{title} ｜ {interaction.user.display_name} 的衝卷結果",
@@ -389,14 +374,18 @@ async def scroll(
     embed.set_thumbnail(url=interaction.user.display_avatar.url)
     
     embed.add_field(name="🛡️ 目標裝備", value=f"**{裝備名稱}**", inline=True)
-    embed.add_field(
-        name="📜 使用卷軸", 
-        value=f"**{卷軸類型}**\n(成功: `{卷軸機率:.1f}%` ｜ 毀損: `{effective_break_rate:.1f}%`)", 
-        inline=True
-    )
-    embed.add_field(name="📊 裝備狀態", value=status_text, inline=False)
-    embed.add_field(name="🎲 判定數值明細", value=detail_text, inline=False)
-    embed.set_footer(text="5AM 鐵匠工坊 ｜ Artale 原廠機率模擬 ˊˇˋ")
+    if effective_break_rate > 0:
+        embed.add_field(
+            name="📜 使用卷軸", 
+            value=f"**{卷軸類型}**\n(成功: `{卷軸機率:.1f}%` ｜ 毀損: `{effective_break_rate:.1f}%`)", 
+            inline=True
+        )
+    else:
+        embed.add_field(
+            name="📜 使用卷軸", 
+            value=f"**{卷軸類型}** (`{卷軸機率:.1f}%`)", 
+            inline=True
+        )
     
     await interaction.response.send_message(embed=embed)
 
