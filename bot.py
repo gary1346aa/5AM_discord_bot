@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 import database
 
-# Load environment variables
+# 載入環境變數
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = int(os.getenv("GUILD_ID", "1375419109323440169"))
@@ -76,9 +76,9 @@ class FiveAMBot(discord.Client):
             self.tree.clear_commands(guild=None)
             await self.tree.sync(guild=None)
             
-            print(f"Syncing slash commands to 5AM Guild ({GUILD_ID})...")
+            print(f"正在同步繁體中文指令至 5AM 伺服器 ({GUILD_ID})...")
             synced = await self.tree.sync(guild=guild)
-            print(f"Successfully synced {len(synced)} active commands to 5AM Guild:")
+            print(f"成功同步 {len(synced)} 個指令至 5AM 伺服器：")
             for cmd in synced:
                 print(f"  - /{cmd.name}: {cmd.description}")
 
@@ -87,8 +87,8 @@ bot = FiveAMBot()
 @bot.event
 async def on_ready():
     print("------")
-    print(f"Logged in as {bot.user} (ID: {bot.user.id})")
-    print("5AM Bot is online and ready!")
+    print(f"已成功登入為 {bot.user} (ID: {bot.user.id})")
+    print("5AM 機器人已上線並就緒！")
     print("------")
 
 @bot.event
@@ -102,7 +102,7 @@ async def on_member_join(member):
         embed = discord.Embed(
             title="🌅 歡迎加入 5AM 🌅",
             description=(
-                f"Hi! {member.mention}\n\n"
+                f"嗨！{member.mention}\n\n"
                 f"✨ 歡迎加入 ✨ 5AM，願你在這裡遇見屬於自己的早晨與陪伴。\n\n"
                 f"{rules_text}"
                 f"📝 請將暱稱修改為遊戲暱稱 / 職業。\n"
@@ -118,7 +118,7 @@ async def on_member_join(member):
         try:
             await channel.send(embed=embed)
         except Exception as e:
-            print(f"Failed to send welcome message: {e}")
+            print(f"發送歡迎訊息失敗: {e}")
 
 @bot.event
 async def on_member_remove(member):
@@ -142,7 +142,7 @@ async def on_member_remove(member):
         try:
             await channel.send(embed=embed)
         except Exception as e:
-            print(f"Failed to send farewell message: {e}")
+            print(f"發送告別訊息失敗: {e}")
 
 @bot.event
 async def on_voice_state_update(member, before, after):
@@ -162,7 +162,7 @@ async def on_voice_state_update(member, before, after):
         try:
             await log_channel.send(msg)
         except Exception as e:
-            print(f"Failed to send voice join log: {e}")
+            print(f"發送語音進入紀錄失敗: {e}")
 
     elif before.channel is not None and after.channel is None:
         msg = (
@@ -173,7 +173,7 @@ async def on_voice_state_update(member, before, after):
         try:
             await log_channel.send(msg)
         except Exception as e:
-            print(f"Failed to send voice leave log: {e}")
+            print(f"發送語音離開紀錄失敗: {e}")
 
     elif before.channel is not None and after.channel is not None and before.channel.id != after.channel.id:
         msg = (
@@ -184,12 +184,12 @@ async def on_voice_state_update(member, before, after):
         try:
             await log_channel.send(msg)
         except Exception as e:
-            print(f"Failed to send voice switch log: {e}")
+            print(f"發送語音切換紀錄失敗: {e}")
 
-# ----------------- ACTIVE COMMANDS -----------------
+# ----------------- 繁體中文指令 (ACTIVE COMMANDS) -----------------
 
 # 1. /每日運勢 (經典星座色彩版)
-@bot.tree.command(name="每日運勢", description="查看今日運勢、幸運色與貴人星座")
+@bot.tree.command(name="每日運勢", description="查看今日運勢、幸運色與貴人星座（經典星座色彩版）")
 async def fortune(interaction: discord.Interaction):
     discord_id = interaction.user.id
     can_get, last_date = database.check_fortune_status(discord_id)
@@ -207,7 +207,7 @@ async def fortune(interaction: discord.Interaction):
     noble = random.choice(CONSTELLATIONS)
     
     embed = discord.Embed(
-        title=f"🔮 {interaction.user.display_name} 的今日運勢 (經典版)",
+        title=f"🔮 {interaction.user.display_name} 的今日運勢（經典版）",
         color=0xF39C12
     )
     embed.set_thumbnail(url=interaction.user.display_avatar.url)
@@ -241,8 +241,8 @@ async def fortune(interaction: discord.Interaction):
         except Exception as e:
             await interaction.response.send_message(embed=embed)
 
-# 2. /每日運勢2 (Artale 冒險者神諭與打王宜忌版)
-@bot.tree.command(name="每日運勢2", description="Artale 冒險者專屬神諭占卜 (含打王宜忌、掉寶預測、貴人職業與幸運地圖)")
+# 2. /每日運勢2 (Artale 冒險神諭版)
+@bot.tree.command(name="每日運勢2", description="Artale 冒險者專屬神諭占卜（含打王宜忌、掉寶預測、貴人職業與幸運地圖）")
 async def fortune2(interaction: discord.Interaction):
     discord_id = interaction.user.id
     can_get, last_date = database.check_fortune2_status(discord_id)
@@ -256,17 +256,16 @@ async def fortune2(interaction: discord.Interaction):
     
     f2 = database.generate_fortune2_data()
     
-    # Color palette based on tier
     if "大吉" in f2["tier"]:
-        embed_color = 0xF1C40F # Gold
+        embed_color = 0xF1C40F
     elif "中吉" in f2["tier"]:
-        embed_color = 0x3498DB # Blue
+        embed_color = 0x3498DB
     elif "小吉" in f2["tier"]:
-        embed_color = 0x2ECC71 # Green
+        embed_color = 0x2ECC71
     elif "大凶" in f2["tier"]:
-        embed_color = 0x111111 # Dark Black
+        embed_color = 0x111111
     else:
-        embed_color = 0xE67E22 # Orange / Danger
+        embed_color = 0xE67E22
         
     embed = discord.Embed(
         title=f"⚔️ {interaction.user.display_name} 的 Artale 冒險者神諭",
@@ -308,57 +307,51 @@ async def fortune2(interaction: discord.Interaction):
         except Exception as e:
             await interaction.response.send_message(embed=embed)
 
-
-# 3. /衝卷 (Artale 衝卷模擬器 - 原汁原味遊戲文字)
-@bot.tree.command(name="衝卷", description="Artale 裝備衝卷模擬器 (支援一般卷軸、詛咒卷軸、純白卷軸)")
+# 3. /衝卷 (Artale 衝卷模擬器 - 全繁體中文參數與說明)
+@bot.tree.command(name="衝卷", description="Artale 裝備衝卷模擬器（支援一般卷軸、詛咒卷軸、純白卷軸）")
 @app_commands.describe(
-    item_name="目標裝備名稱 (例如：強化冥雷弩、炎魔頭盔、乾坤手套)",
-    scroll_type="卷軸類型 (一般卷軸 / 詛咒卷軸 / 純白卷軸)",
-    success_rate="卷軸成功機率 % (例如：10, 15, 30, 60, 65, 70, 100, 1, 3, 5)",
-    break_rate="失敗毀損機率 % (詛咒卷固定50%，純白卷可自訂如 1, 5, 10，一般卷請填0)"
+    裝備名稱="目標裝備名稱（例如：強化冥雷弩、炎魔頭盔、乾坤手套、玄冥劍）",
+    卷軸類型="選擇要使用的卷軸類型（一般卷軸 / 詛咒卷軸 / 純白卷軸）",
+    卷軸機率="卷軸成功機率 %（例如：10, 15, 30, 60, 65, 70, 100, 1, 3, 5）",
+    毀損機率="失敗毀損機率 %（詛咒卷固定50%，純白卷可自訂如 1, 5, 10，一般卷請填0）"
 )
-@app_commands.choices(scroll_type=[
-    app_commands.Choice(name="📜 一般卷軸 (失敗不爆裝)", value="一般卷軸"),
-    app_commands.Choice(name="💀 詛咒卷軸 (失敗50%機率摧毀裝備)", value="詛咒卷軸"),
-    app_commands.Choice(name="⚪ 純白卷軸 (失敗自訂機率摧毀裝備)", value="純白卷軸")
+@app_commands.choices(卷軸類型=[
+    app_commands.Choice(name="📜 一般卷軸（失敗不爆裝）", value="一般卷軸"),
+    app_commands.Choice(name="💀 詛咒卷軸（失敗50%機率摧毀裝備）", value="詛咒卷軸"),
+    app_commands.Choice(name="⚪ 純白卷軸（失敗依自訂機率摧毀裝備）", value="純白卷軸")
 ])
 async def scroll(
     interaction: discord.Interaction,
-    item_name: str,
-    scroll_type: str,
-    success_rate: float,
-    break_rate: float = 0.0
+    裝備名稱: str,
+    卷軸類型: str,
+    卷軸機率: float,
+    毀損機率: float = 0.0
 ):
-    # Validate rates
-    if success_rate <= 0 or success_rate > 100:
+    if 卷軸機率 <= 0 or 卷軸機率 > 100:
         await interaction.response.send_message("❌ 卷軸成功機率必須在 0.1% ~ 100% 之間喵！", ephemeral=True)
         return
         
-    if break_rate < 0 or break_rate > 100:
+    if 毀損機率 < 0 or 毀損機率 > 100:
         await interaction.response.send_message("❌ 毀損機率必須在 0% ~ 100% 之間喵！", ephemeral=True)
         return
         
-    # Determine effective break rate
-    if scroll_type == "詛咒卷軸":
+    if 卷軸類型 == "詛咒卷軸":
         effective_break_rate = 50.0
-    elif scroll_type == "純白卷軸":
-        effective_break_rate = break_rate
-    else: # 一般卷軸
+    elif 卷軸類型 == "純白卷軸":
+        effective_break_rate = 毀損機率
+    else:
         effective_break_rate = 0.0
         
-    # Roll dice
     roll_success = round(random.uniform(0.0001, 100.0), 2)
-    is_success = roll_success <= success_rate
+    is_success = roll_success <= 卷軸機率
     
     if is_success:
-        # Success Case
-        embed_color = 0x2ECC71 # Green
+        embed_color = 0x2ECC71
         title = "🎉【衝卷大成功】"
-        game_text = f"卷軸閃爍了一下，神秘的力量傳到了{item_name}身上。"
+        game_text = f"卷軸閃爍了一下，神秘的力量傳到了{裝備名稱}身上。"
         status_text = "✅ 裝備能力大幅提升！"
-        detail_text = f"🎯 成功判定：擲出 `{roll_success:.2f}%` (門檻: `≤ {success_rate:.1f}%`) 👉 **成功！**"
+        detail_text = f"🎯 成功判定：擲出 `{roll_success:.2f}%`（門檻: `≤ {卷軸機率:.1f}%`）👉 **成功！**"
     else:
-        # Failed - Check Destruction
         if effective_break_rate > 0.0:
             roll_break = round(random.uniform(0.0001, 100.0), 2)
             is_destroyed = roll_break <= effective_break_rate
@@ -367,28 +360,26 @@ async def scroll(
             is_destroyed = False
             
         if is_destroyed:
-            # Destroyed Case
-            embed_color = 0xE74C3C # Red
+            embed_color = 0xE74C3C
             title = "💥【裝備已被摧毀】"
-            game_text = f"受到卷軸的力量影響，{item_name}被摧毀了。"
-            status_text = "💀 裝備化為烏有 (永久損毀)"
+            game_text = f"受到卷軸的力量影響，{裝備名稱}被摧毀了。"
+            status_text = "💀 裝備化為烏有（永久損毀）"
             detail_text = (
-                f"🎯 成功判定：擲出 `{roll_success:.2f}%` (門檻: `≤ {success_rate:.1f}%`) 👉 **失敗**\n"
-                f"💣 毀損判定：擲出 `{roll_break:.2f}%` (門檻: `≤ {effective_break_rate:.1f}%`) 👉 **💥 觸發摧毀！**"
+                f"🎯 成功判定：擲出 `{roll_success:.2f}%`（門檻: `≤ {卷軸機率:.1f}%`）👉 **失敗**\n"
+                f"💣 毀損判定：擲出 `{roll_break:.2f}%`（門檻: `≤ {effective_break_rate:.1f}%`）👉 **💥 觸發摧毀！**"
             )
         else:
-            # Safe Fail Case
-            embed_color = 0x95A5A6 # Gray
+            embed_color = 0x95A5A6
             title = "💨【衝卷失敗】"
-            game_text = f"卷軸閃爍了一下，但{item_name}沒有任何變化。"
-            status_text = "🛡️ 裝備保留 (未觸發毀損)"
+            game_text = f"卷軸閃爍了一下，但{裝備名稱}沒有任何變化。"
+            status_text = "🛡️ 裝備保留（未觸發毀損）"
             if effective_break_rate > 0:
                 detail_text = (
-                    f"🎯 成功判定：擲出 `{roll_success:.2f}%` (門檻: `≤ {success_rate:.1f}%`) 👉 **失敗**\n"
-                    f"🛡️ 毀損判定：擲出 `{roll_break:.2f}%` (門檻: `≤ {effective_break_rate:.1f}%`) 👉 **幸運未爆**"
+                    f"🎯 成功判定：擲出 `{roll_success:.2f}%`（門檻: `≤ {卷軸機率:.1f}%`）👉 **失敗**\n"
+                    f"🛡️ 毀損判定：擲出 `{roll_break:.2f}%`（門檻: `≤ {effective_break_rate:.1f}%`）👉 **幸運未爆**"
                 )
             else:
-                detail_text = f"🎯 成功判定：擲出 `{roll_success:.2f}%` (門檻: `≤ {success_rate:.1f}%`) 👉 **失敗 (無損毀機制)**"
+                detail_text = f"🎯 成功判定：擲出 `{roll_success:.2f}%`（門檻: `≤ {卷軸機率:.1f}%`）👉 **失敗（無損毀機制）**"
                 
     embed = discord.Embed(
         title=f"{title} ｜ {interaction.user.display_name} 的衝卷結果",
@@ -397,10 +388,10 @@ async def scroll(
     )
     embed.set_thumbnail(url=interaction.user.display_avatar.url)
     
-    embed.add_field(name="🛡️ 目標裝備", value=f"**{item_name}**", inline=True)
+    embed.add_field(name="🛡️ 目標裝備", value=f"**{裝備名稱}**", inline=True)
     embed.add_field(
         name="📜 使用卷軸", 
-        value=f"**{scroll_type}**\n(成功: `{success_rate:.1f}%` ｜ 毀損: `{effective_break_rate:.1f}%`)", 
+        value=f"**{卷軸類型}**\n(成功: `{卷軸機率:.1f}%` ｜ 毀損: `{effective_break_rate:.1f}%`)", 
         inline=True
     )
     embed.add_field(name="📊 裝備狀態", value=status_text, inline=False)
@@ -410,7 +401,7 @@ async def scroll(
     await interaction.response.send_message(embed=embed)
 
 # 4. /每日毒湯
-@bot.tree.command(name="每日毒湯", description="隨機領取一碗心靈毒雞湯")
+@bot.tree.command(name="每日毒湯", description="隨機領取一碗心靈毒雞湯（普通毒湯 / 劇毒砒霜）")
 async def toxic(interaction: discord.Interaction):
     quote, toxicity_level = database.get_random_toxic_quote()
     
@@ -444,31 +435,34 @@ async def toxic(interaction: discord.Interaction):
         except Exception as e:
             await interaction.response.send_message(embed=embed)
 
-# 5. /新增毒湯
+# 5. /新增毒湯 (全繁體中文參數)
 @bot.tree.command(name="新增毒湯", description="管理員新增自訂毒雞湯至語錄庫")
-@app_commands.describe(quote="要新增的毒雞湯內容", toxicity_level="毒湯等級分類")
-@app_commands.choices(toxicity_level=[
+@app_commands.describe(
+    毒湯內容="要新增的毒雞湯文字內容",
+    毒性等級="選擇毒湯等級分類（普通毒湯 / 劇毒砒霜）"
+)
+@app_commands.choices(毒性等級=[
     app_commands.Choice(name="⭐ 普通毒湯", value="⭐ 普通毒湯"),
     app_commands.Choice(name="💀 劇毒砒霜", value="💀 劇毒砒霜")
 ])
-async def add_toxic(interaction: discord.Interaction, quote: str, toxicity_level: str = "⭐ 普通毒湯"):
+async def add_toxic(interaction: discord.Interaction, 毒湯內容: str, 毒性等級: str = "⭐ 普通毒湯"):
     if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message("❌ 只有管理員可以新增毒雞湯喵！", ephemeral=True)
         return
         
-    if not quote.strip():
+    if not 毒湯內容.strip():
         await interaction.response.send_message("❌ 請輸入有效的毒雞湯內容喵！", ephemeral=True)
         return
         
-    success, msg = database.add_toxic_quote(quote.strip(), toxicity_level, interaction.user.id)
+    success, msg = database.add_toxic_quote(毒湯內容.strip(), 毒性等級, interaction.user.id)
     if success:
         total_count = database.get_toxic_quote_count()
         embed = discord.Embed(
             title="✅ 毒雞湯新增成功！",
-            description=f"```{quote.strip()}```",
+            description=f"```{毒湯內容.strip()}```",
             color=0x2ECC71
         )
-        embed.add_field(name="☠️ 毒性等級", value=toxicity_level, inline=True)
+        embed.add_field(name="☠️ 毒性等級", value=毒性等級, inline=True)
         embed.add_field(name="📚 語錄庫總數", value=f"`{total_count}` 則", inline=True)
         await interaction.response.send_message(embed=embed, ephemeral=True)
     else:
@@ -476,6 +470,6 @@ async def add_toxic(interaction: discord.Interaction, quote: str, toxicity_level
 
 if __name__ == "__main__":
     if not TOKEN:
-        print("Error: DISCORD_TOKEN is not set in the .env file.")
+        print("錯誤：.env 檔案中未設定 DISCORD_TOKEN。")
     else:
         bot.run(TOKEN)

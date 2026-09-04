@@ -1,65 +1,78 @@
 # 5AM Discord Guild Bot 🌅
 
-A custom Discord bot tailored for the **5AM** guild, featuring automated member onboarding, voice activity logging, dual fortune-telling systems, equipment scrolling simulator, and dynamic toxic quotes management.
+專為 **5AM** 公會量身打造的 Discord 機器人，包含成員進退通知、語音進出日誌、雙版本每日運勢占卜、Artale 裝備衝卷模擬器以及動態毒雞湯語錄庫。
 
 ---
 
-## 🚀 Active Features & Commands
+## 🚀 目前已啟用指令與功能
 
-- **🌅 Welcome & Farewell System**: Branded embed greeting cards showing member avatars, server rules shortcut, member count, and local join timestamp (UTC+8).
-- **🔊 Voice Activity Logging**: Real-time logging of voice room joins, leaves, and channel switches.
-- **🔨 Equipment Scrolling Simulator (衝卷模擬器)**:
-  - `/衝卷`: **Artale 原汁原味裝備衝卷模擬**
-    - `裝備名稱`: 自訂裝備（如：強化冥雷弩、炎魔頭盔、乾坤手套）
-    - `卷軸類型`:
-      - `📜 一般卷軸`: 失敗不爆裝
-      - `💀 詛咒卷軸`: 失敗 50% 機率摧毀裝備
-      - `⚪ 純白卷軸`: 失敗依自訂機率摧毀裝備
-    - `卷軸機率`: 成功機率 % (如 10%, 15%, 30%, 60%, 65%, 70%, 100%, 1%, 3%, 5%)
-    - `毀損機率`: 失敗時摧毀裝備之機率 % (詛咒卷固定 50%，純白卷可自訂)
-    - **正宗遊戲提示文字**:
-      - 成功：`卷軸閃爍了一下，神秘的力量傳到了{裝備名稱}身上。`
-      - 失敗：`卷軸閃爍了一下，但{裝備名稱}沒有任何變化。`
-      - 損毀：`受到卷軸的力量影響，{裝備名稱}被摧毀了。`
-- **🔮 Dual Fortune Systems**:
-  - `/每日運勢`: **經典星座色彩版** — 查看每日吉凶、今日短評、幸運色與貴人星座。
-  - `/每日運勢2`: **Artale 冒險神諭版** — 專為打王冒險設計，包含今日神諭、今日宜/忌、貴人隊友、幸運地圖、掉寶預測與命運塔羅指引。
-- **🥣 Toxic Quotes System**:
-  - `/每日毒湯`: 隨機領取一碗心靈毒雞湯 (普通毒湯 / 劇毒砒霜)。
-  - `/新增毒湯`: 管理員自訂新增毒雞湯至語錄庫。
+### 1. 🔨 裝備衝卷模擬器
+- **/衝卷**：`Artale 裝備衝卷模擬器（支援一般卷軸、詛咒卷軸、純白卷軸）`
+  - `裝備名稱`（必填）：目標裝備名稱（如：強化冥雷弩、炎魔頭盔、乾坤手套、玄冥劍）
+  - `卷軸類型`（必填）：
+    - `📜 一般卷軸（失敗不爆裝）`
+    - `💀 詛咒卷軸（失敗50%機率摧毀裝備）`
+    - `⚪ 純白卷軸（失敗依自訂機率摧毀裝備）`
+  - `卷軸機率`（必填）：卷軸成功機率 %（如：10, 15, 30, 60, 65, 70, 100, 1, 3, 5）
+  - `毀損機率`（選填）：失敗毀損機率 %（詛咒卷固定 50%，純白卷可自訂如 1, 5, 10，一般卷填 0）
+  - **正宗遊戲提示文字**：
+    - 成功：`卷軸閃爍了一下，神秘的力量傳到了{裝備名稱}身上。`
+    - 失敗：`卷軸閃爍了一下，但{裝備名稱}沒有任何變化。`
+    - 損毀：`受到卷軸的力量影響，{裝備名稱}被摧毀了。`
+
+### 2. 🔮 雙版本每日運勢系統
+- **/每日運勢**：`查看今日運勢、幸運色與貴人星座（經典星座色彩版）`
+- **/每日運勢2**：`Artale 冒險者專屬神諭占卜（含打王宜忌、掉寶預測、貴人職業與幸運地圖）`
+  - 📜 今日神諭
+  - ⭕ 今日【宜】*(如：墊卷衝裝大成功、準時上車打龍王)*
+  - ❌ 今日【忌】*(如：頭鐵狂點30%詛咒卷、王死噴寶瞬間斷線)*
+  - 🤝 貴人隊友 *(12 職業特色稱號)*
+  - 🗺️ 幸運地圖 *(炎魔祭壇、龍王洞穴、海怒斯洞窟等)*
+  - 💎 掉寶預測 *(日鏢、月鏢、炎盔、龍王項鍊、詛咒卷等)*
+  - 🎴 命運塔羅指引
+
+### 3. 🥣 毒雞湯系統
+- **/每日毒湯**：`隨機領取一碗心靈毒雞湯（普通毒湯 / 劇毒砒霜）`
+- **/新增毒湯**：`管理員新增自訂毒雞湯至語錄庫`
+  - `毒湯內容`（必填）：要新增的毒雞湯文字內容
+  - `毒性等級`（選填）：選擇毒湯等級分類（⭐ 普通毒湯 / 💀 劇毒砒霜）
+
+### 4. 🌅 伺服器基礎功能
+- **歡迎與告別卡片**：新成員加入 / 離服自動發送精美卡片（包含伺服器人數與 UTC+8 加入時間）。
+- **語音進出日誌**：即時記錄語音頻道進出與切換動態。
 
 ---
 
-## 📦 Installation & Setup
+## 📦 安裝與啟動說明
 
-### 1. Clone the Repository
+### 1. 複製專案
 ```bash
 git clone https://github.com/gary1346aa/5AM_discord_bot.git
 cd 5AM_discord_bot
 ```
 
-### 2. Install Dependencies
+### 2. 安裝依賴套件
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment Variables
-Copy `.env.example` to `.env` and fill in your bot token and server channel IDs:
+### 3. 設定環境變數
+複製 `.env.example` 為 `.env` 並填入機器人 Token 與頻道 ID：
 ```bash
 cp .env.example .env
 ```
 
 ```env
-DISCORD_TOKEN=your_bot_token_here
+DISCORD_TOKEN=你的機器人Token
 GUILD_ID=1375419109323440169
-WELCOME_CHANNEL_ID=your_welcome_channel_id
-VOICE_LOG_CHANNEL_ID=your_voice_log_channel_id
-QUOTE_CHANNEL_ID=your_quote_channel_id
-LEVEL_CHANNEL_ID=your_level_channel_id
-RULES_CHANNEL_ID=your_rules_channel_id
+WELCOME_CHANNEL_ID=歡迎頻道ID
+VOICE_LOG_CHANNEL_ID=語音日誌頻道ID
+QUOTE_CHANNEL_ID=運勢與毒湯頻道ID
+LEVEL_CHANNEL_ID=等級頻道ID
+RULES_CHANNEL_ID=規則頻道ID
 ```
 
-### 4. Run the Bot
+### 4. 啟動機器人
 ```bash
 python bot.py
 ```
