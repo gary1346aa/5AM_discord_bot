@@ -194,8 +194,10 @@ def init_db():
     print("5AM Database tables initialized successfully.")
 
 def get_today_str():
+    # 每日重置標準：台北時間每天 08:00 AM (UTC+8)
+    # 透過減去 8 小時，使得 00:00~07:59:59 歸為前一天的週期，08:00 準時進入新一天週期
     tz_utc8 = datetime.timezone(datetime.timedelta(hours=8))
-    today_dt = datetime.datetime.now(tz_utc8)
+    today_dt = datetime.datetime.now(tz_utc8) - datetime.timedelta(hours=8)
     return today_dt.strftime("%Y-%m-%d")
 
 # --- FORTUNE 1 FUNCTIONS ---
