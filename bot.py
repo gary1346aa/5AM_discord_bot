@@ -311,25 +311,35 @@ async def fortune2(interaction: discord.Interaction):
 @bot.tree.command(name="衝卷", description="Artale 裝備衝卷模擬器（支援一般卷軸、詛咒卷軸、純白卷軸）")
 @app_commands.describe(
     裝備名稱="目標裝備名稱（例如：強化冥雷弩、炎魔頭盔、乾坤手套、玄冥劍）",
-    卷軸類型="選擇要使用的卷軸類型（一般卷軸 / 詛咒卷軸 / 純白卷軸）",
-    卷軸機率="卷軸成功機率 %（例如：10, 15, 30, 60, 65, 70, 100, 1, 3, 5）",
-    毀損機率="失敗毀損機率 %（詛咒卷固定50%，純白卷可自訂如 1, 5, 10，一般卷請填0）"
+    卷軸類型="選擇要使用的卷軸類型（一般卷軸預設60% / 詛咒卷軸預設30% / 純白卷軸預設1%）",
+    卷軸機率="選填：自訂成功機率 %（一般卷預設60%、詛咒卷預設30%、純白卷預設1%）",
+    毀損機率="選填：失敗毀損機率 %（詛咒卷固定50%，純白卷可自訂如 1, 5, 10，一般卷固定0）"
 )
 @app_commands.choices(卷軸類型=[
-    app_commands.Choice(name="📜 一般卷軸（失敗不爆裝）", value="一般卷軸"),
-    app_commands.Choice(name="💀 詛咒卷軸（失敗50%機率摧毀裝備）", value="詛咒卷軸"),
-    app_commands.Choice(name="⚪ 純白卷軸（失敗依自訂機率摧毀裝備）", value="純白卷軸")
+    app_commands.Choice(name="📜 一般卷軸（預設60%・失敗不爆裝）", value="一般卷軸"),
+    app_commands.Choice(name="💀 詛咒卷軸（預設30%・失敗50%機率摧毀裝備）", value="詛咒卷軸"),
+    app_commands.Choice(name="⚪ 純白卷軸（預設1%・失敗依自訂機率摧毀裝備）", value="純白卷軸")
 ])
 async def scroll(
     interaction: discord.Interaction,
     裝備名稱: str,
     卷軸類型: str,
-    卷軸機率: float,
+    卷軸機率: float = None,
     毀損機率: float = 0.0
 ):
-    if 卷軸機率 <= 0 or 卷軸機率 > 100:
-        await interaction.response.send_message("❌ 卷軸成功機率必須在 0.1% ~ 100% 之間喵！", ephemeral=True)
-        return
+    # Determine default success rate if omitted
+    if 卷軸機率 is None:
+        if 卷軸類型 == "詛咒卷軸":
+            effective_success_rate = 30.0
+        elif 卷軸類型 == "純白卷軸":
+            effective_success_rate = 1.0
+        else: # 一般卷軸
+            effective_success_rate = 60.0
+    else:
+        if 卷軸機率 <= 0 or 卷軸機率 > 100:
+            await interaction.response.send_message("❌ 卷軸成功機率必須在 0.1% ~ 100% 之間喵！", ephemeral=True)
+            return
+        effective_success_rate = 卷軸機率
         
     if 毀損機率 < 0 or 毀損機率 > 100:
         await interaction.response.send_message("❌ 毀損機率必須在 0% ~ 100% 之間喵！", ephemeral=True)
@@ -343,7 +353,7 @@ async def scroll(
         effective_break_rate = 0.0
         
     roll_success = round(random.uniform(0.0001, 100.0), 2)
-    is_success = roll_success <= 卷軸機率
+    is_success = roll_success <= effective_success_rate
     
     if is_success:
         embed_color = 0x2ECC71
@@ -377,13 +387,13 @@ async def scroll(
     if effective_break_rate > 0:
         embed.add_field(
             name="📜 使用卷軸", 
-            value=f"**{卷軸類型}**\n(成功: `{卷軸機率:.1f}%` ｜ 毀損: `{effective_break_rate:.1f}%`)", 
+            value=f"**{卷軸類型}**\n(成功: `{effective_success_rate:.1f}%` ｜ 毀損: `{effective_break_rate:.1f}%`)", 
             inline=True
         )
     else:
         embed.add_field(
             name="📜 使用卷軸", 
-            value=f"**{卷軸類型}** (`{卷軸機率:.1f}%`)", 
+            value=f"**{卷軸類型}** (`{effective_success_rate:.1f}%`)", 
             inline=True
         )
     
